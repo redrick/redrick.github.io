@@ -1,0 +1,414 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Andrej Antaš</title>
+    <description>My personal pages</description>
+    <link>http://antas.cz/</link>
+    <atom:link href="http://antas.cz/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Tue, 25 May 2021 23:35:59 +0200</pubDate>
+    <lastBuildDate>Tue, 25 May 2021 23:35:59 +0200</lastBuildDate>
+    <generator>Jekyll v3.4.3</generator>
+    
+      <item>
+        <title>Removing STI and preserving API version?</title>
+        <description>&lt;p&gt;Hi guys, so today it is kind of funny thing what I was and will be solving for a bit now at work…
+So the main problem is that we have functional a helpful intranet where many things are represented and mainly there is a wee bit of overuse of STI. Which many would argue is horrible mistake, but sometimes really really makes sense…&lt;/p&gt;
+
+&lt;p&gt;I am not here to make a case for it because in this particular case it also made completely no sense… But here it was gradual changes to both models represented by the common table. So I reached the point where almostly only thing they had in common was the actual table there… so STI off you go right ? Well it is not as easy as that, there are many many tutorials and blog posts to help you get rid of STI even if you have it there for a while (in my case 6 years probably more…), for example these:&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://about.futurelearn.com/blog/refactoring-rails-sti/&quot;&gt;FutureLearn article&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://blog.arkency.com/2013/07/sti/&quot;&gt;Arkency article&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;They solve and show you how to solve some problems right?&lt;/p&gt;
+
+&lt;p&gt;But here is my case… You have roundup of older and nicely functional tools that use this apps API to get your base STI model with ID…. since it is STI there is no way IDs of one or the other model inheriting from base are going to be same right ? So this way you don’t really have to have API for each model from STI, base is really enough since you are able to find it by ID.&lt;/p&gt;
+
+&lt;p&gt;OK but now I tore it apart, is two tables now and this way my IDs will meet and there is a problem right there, even if I create myself nice facade to search above these two models I am not able to find the right one by ID because it will result in two records each time, but my user only wants one…&lt;/p&gt;
+
+&lt;p&gt;So first of all what I did is preserve existing IDs, so by the time I migrate no two ids meet, that is a given from situation before and then I worked out that best would be to let these two tables share common sequence in this version of API and with the new one I will have to rewrite couple tools. But interesting thing is how really easy that was:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-sql&quot; data-lang=&quot;sql&quot;&gt;&lt;span class=&quot;k&quot;&gt;CREATE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;SEQUENCE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;common_base_id_seq&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;START&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;WITH&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;50000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;This way I just set up some common sequence I could use, then I just altered existing ones in my tables:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-sql&quot; data-lang=&quot;sql&quot;&gt;&lt;span class=&quot;k&quot;&gt;ALTER&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;TABLE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;breads&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;ALTER&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;COLUMN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;id&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;SET&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;DEFAULT&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nextval&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'common_base_id_seq'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;ALTER&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;TABLE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cucumbers&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;ALTER&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;COLUMN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;id&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;SET&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;DEFAULT&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nextval&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'common_base_id_seq'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;What this will do for me now is that it will ensure between oth these tables ID will be unique.&lt;/p&gt;
+
+&lt;p&gt;I can sleep nice now and continue little bits here and there preserving my API version as it was preparing for the changes to come in future.&lt;/p&gt;
+
+&lt;p&gt;OK so we are all set, happy coding then and see you around.&lt;/p&gt;
+</description>
+        <pubDate>Sat, 15 Apr 2017 01:21:00 +0200</pubDate>
+        <link>http://antas.cz/removing-sti-and-preserving-api-version</link>
+        <guid isPermaLink="true">http://antas.cz/removing-sti-and-preserving-api-version</guid>
+        
+        <category>rails</category>
+        
+        <category>api</category>
+        
+        <category>sti</category>
+        
+        
+        <category>rails</category>
+        
+        <category>api</category>
+        
+        <category>sti</category>
+        
+      </item>
+    
+      <item>
+        <title>Recursion with nokogiri are friends</title>
+        <description>&lt;p&gt;So as a quick one I found out some time ago that I need to migrate &lt;code class=&quot;highlighter-rouge&quot;&gt;wiki&lt;/code&gt; like
+information from one system to postgres DB… That basically meant for me that I
+need to crawl those pages, cut out paragraphs I want and move only those.&lt;/p&gt;
+
+&lt;p&gt;And there you can see what I found out… Now I don’t say is the right solution,
+but for sure quick and kinda neat for what it does :)&lt;/p&gt;
+
+&lt;p&gt;So first of all just a small notice, this was just one time rake task that I
+removed afterward since it served no purpose no more, but was quick to write
+way to move all that data from wiki without actually hiring two people for
+weekend to copy paste it… We are developers, there is nothing script cannot
+do for us right?&lt;/p&gt;
+
+&lt;p&gt;So here I exactly as I described needed to cut out only paragraphs that are
+essential for me, so half of the information there was redundant anyway.&lt;/p&gt;
+
+&lt;p&gt;So long story short I needed only to find my two entities between which is my
+desired text. As I want to provide you more examples, so lets say we are
+looking for paragraph that starts with link with text ‘Hello’ and ends with &lt;code class=&quot;highlighter-rouge&quot;&gt;hr&lt;/code&gt; tag.
+(note I am getting response from Net::HTTP)&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Nokogiri&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;HTML&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;start&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;search&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;a:contains('Hello')&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;first&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;stop&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;search&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;hr&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;first&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Notice, that these are presented as array to you, but in my case I am sure
+there is only one of each on the page, so I can afford to just go ahead and
+call &lt;code class=&quot;highlighter-rouge&quot;&gt;.first&lt;/code&gt; on two entities beginning and ending my paragraph.&lt;/p&gt;
+
+&lt;p&gt;And now just a nifty method getting all between and we are good to go :)&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;collect_between&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;start&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stop&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;collect_between&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;next_element&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)]&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;And there goes recursion, where I am filling array with next and next element
+untill I hit the last one. You could do with &lt;code class=&quot;highlighter-rouge&quot;&gt;while&lt;/code&gt;, but for me seems nice to
+use recursion. In my daily job I hardly ever meet it since it could be tricky and not
+so easy to debug if you make a mistake. But in this case is just nicer and fits
+one line :)&lt;/p&gt;
+
+&lt;p&gt;Ok so here we have it. We call this bad boy with our two elements and are good
+to go and since I am am from here forward in app using WYSIWYG editor I want to
+store it as HTML that it was on the page and will apply similar styling to it
+so I save it like string:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;collect_between&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:to_html&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;join&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Thank you for reading and hopefully it was usefull for somebody :)&lt;/p&gt;
+</description>
+        <pubDate>Sun, 12 Mar 2017 00:21:00 +0100</pubDate>
+        <link>http://antas.cz/recursion-with-nokogiri-are-friends</link>
+        <guid isPermaLink="true">http://antas.cz/recursion-with-nokogiri-are-friends</guid>
+        
+        <category>ruby</category>
+        
+        
+        <category>ruby</category>
+        
+      </item>
+    
+      <item>
+        <title>SSH on MacOS Sierra</title>
+        <description>&lt;p&gt;As a shout in the dark I have to write this…. You cannot fathom what I just survived with setting up some stuff after “tiny loss of data” and recovery from timemachine backup. As the story goes I got my stuff back, but somehow iTerm got a bit off so I started over with it. Fresh install and so, I thought it is going to be easier… As far as brew that I use on MacOS goes and libraries I was missing from the backup all went well…&lt;/p&gt;
+
+&lt;p&gt;Trouble started once I punched in &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh SERVERNAME&lt;/code&gt; to log into our company development machine…&lt;/p&gt;
+
+&lt;p&gt;First I started off with new annoying problem that happens above macOS 10.12. Mac simply forgets your identities.
+Before it was enough to get him to use Keychain Access by running &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh -K /path/to/key&lt;/code&gt; but that does not work anymore and according to what I read through SO it seems it desired behaviour by apple… well not by us right ?&lt;/p&gt;
+
+&lt;p&gt;So starting here, we need to create file &lt;code class=&quot;highlighter-rouge&quot;&gt;~/.ssh/config&lt;/code&gt; if you got none, that is the place for the configuration. Here the rules go: server name and under it indented by tab all the options/properties or how you call them. So here I found out that I can mimic the old behaviour by only adding couple things in config. Just for someone that does not know, the old behaviour means that you mac keeps your identitties between restarts. And the piece of code is here:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;no&quot;&gt;Host&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;
+  &lt;span class=&quot;no&quot;&gt;UseKeychain&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+  &lt;span class=&quot;no&quot;&gt;AddKeysToAgent&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+  &lt;span class=&quot;no&quot;&gt;IdentityFile&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;~&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/.ssh/i&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;d_rsa&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;As simple as the config can be right? Well not quiet yet. We are going to have other trouble. How I am used to work is that from the remote server I open apps that require window server (X11) to be running to display output from the dev machine that I am using. so lets add X11 forwarding there…&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;no&quot;&gt;Host&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;
+  &lt;span class=&quot;no&quot;&gt;ForwardX11&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+  &lt;span class=&quot;no&quot;&gt;UseKeychain&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+  &lt;span class=&quot;no&quot;&gt;AddKeysToAgent&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+  &lt;span class=&quot;no&quot;&gt;IdentityFile&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;~&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/.ssh/i&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;d_rsa&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;And of course this will not work out for you if you do not have X11 installed on your mac, now is XQuartz app that you can just google away, because you need to use most up to date one anyway. (just a hint: get it from here https://www.xquartz.org/)&lt;/p&gt;
+
+&lt;p&gt;So by now X11 forwarding should be working… well it’s not, you will probably meet one of these:&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Warning: untrusted X11 forwarding setup failed: xauth key data not generated&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;This first one can be easily solved by adding a line in config:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;no&quot;&gt;ForwardX11Trusted&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Which now leaves us with warning:&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Warning: No xauth data; using fake authentication data for X11 forwarding.&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;That we can get rid off by pointing to right xauth location since it has changed in new version of macOS and no one told us specifically… well maybe they did, but sure as hell nobody reads changelogs that are couple pages long… So this line will save the day here:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;no&quot;&gt;XAuthLocation&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;/usr/&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;X11&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bin&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xauth&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;And that should be it for the setup. So I go to dev machine, seems ok no warning on login, X11 opens up when I run something that requires window server, but once I get to &lt;code class=&quot;highlighter-rouge&quot;&gt;git pull&lt;/code&gt; it goes off with:&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Permission denied (publickey)&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Well of course it will since on remote I got no ssh keys and instead I forward mine, so I need to also add that in the config there.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;no&quot;&gt;ForwardAgent&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;ok we are good to go now. So at the end our &lt;code class=&quot;highlighter-rouge&quot;&gt;~/.ssh/config&lt;/code&gt; looks like this:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;no&quot;&gt;Host&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;ForwardX11Trusted&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;ForwardX11&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;ForwardAgent&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;UseKeychain&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;AddKeysToAgent&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;IdentityFile&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;~&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/.ssh/i&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;d_rsa&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;XAuthLocation&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;/usr/&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;X11&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bin&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xauth&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Which is fair enough right, but to add a few extra lines, mine looks more or less like this:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;no&quot;&gt;Host&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;ForwardX11Trusted&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;ForwardX11&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;Compression&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;CompressionLevel&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;9&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;ForwardAgent&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;UseKeychain&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;AddKeysToAgent&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;IdentityFile&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;~&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/.ssh/i&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;d_rsa&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;XAuthLocation&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;/usr/&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;X11&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bin&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xauth&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;ServerAliveInterval&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;60&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;What is extra there is just Compression turned on while not everywhere I got high speed internet and I use vim a lot these days, so it really sucks once vim is lagging while you are writing. And also the last line is pinging server I am connecting to every 60 second to ensure I am not logged off for no good reason (for example talking to people about stuff I am doing…).&lt;/p&gt;
+
+&lt;p&gt;And that concludes the ssh on macOS Sierra where you have to manually paste in configs to make it work like you were used to… But I always calm myself by loads of advantages the system has except making my life more painful by googling things that were working before last update. I hope I helped somebody with this. Happy coding :)&lt;/p&gt;
+</description>
+        <pubDate>Sun, 12 Feb 2017 00:21:00 +0100</pubDate>
+        <link>http://antas.cz/ssh-on-macos-sierra</link>
+        <guid isPermaLink="true">http://antas.cz/ssh-on-macos-sierra</guid>
+        
+        <category>ssh</category>
+        
+        <category>macos</category>
+        
+        
+        <category>ssh</category>
+        
+        <category>macos</category>
+        
+      </item>
+    
+      <item>
+        <title>Rails on Wercker with redis running</title>
+        <description>&lt;p&gt;Hi guys, I know I have been silent for kinda a looong long time, I had loads on my mind, but now new year new resolutions I am not going to keep up with, but one of them I should, because I got loads here that I was dealing with and was not the easiest, but got it solved.&lt;/p&gt;
+
+&lt;p&gt;First on the agenda is my overuse of free or really cheap but really nice solutions. Today is CI. I hope all of us are familiar with CI, I am talking about continuous integration here. To sum it up basically runner that goes through your test and rubocop and such stuff each time you push to git. Proven very useful in many cases and must have when you develop something and you want to keep an eye on quality of your work.&lt;/p&gt;
+
+&lt;p&gt;Today is not the time to share all the tools I use for development although couple of things will be visible in config over here, but I want to talk about CI I use for one of my free time love which is this coffee subscription - &lt;a href=&quot;https://inboxcoffee.cz&quot;&gt;inboxcoffee.cz&lt;/a&gt; which I work on in my free time.&lt;/p&gt;
+
+&lt;p&gt;What I use is &lt;a href=&quot;http://www.wercker.com/&quot;&gt;wercker.com/&lt;/a&gt;. Wercker does not seem to me very popular or such, but for myself is still free even for private github repositories and serves the purpose well.&lt;/p&gt;
+
+&lt;p&gt;One of the pitfalls of it is the setup. I am one of those that want to do all I do without any description or how to, because I mean why, they mentioned is user friendly so I should be able to set it up… well we will see about that in a bit.&lt;/p&gt;
+
+&lt;p&gt;I am running pretty much standard stack on the page, you can check some of it out here: &lt;a href=&quot;https://stackshare.io/redrick/inbox-coffee-company&quot;&gt;stackshare.io/redrick/inbox-coffee-company&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;So lets have a look here, running ruby 2.3… check not a problem, wercker work with docker images, so we can move on. Using postgres as service is also no problem as you may be used from any other CI. But then redis comes in, I am testing also functionality of things going through sidekiq, mocking them and so, but as it is recurring subscription service, some of them are run 17x quicker than real time and other fun stuff to assure quality of service. Nevermind that weird stuff I just said, even for smoke testing I need redis running right…. well not as straight forward as I thought there, but works at present time just fine.&lt;/p&gt;
+
+&lt;p&gt;Let me walk you through it, but first I will just paste it here:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;ss&quot;&gt;services:
+  &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;redis&lt;/span&gt;
+&lt;span class=&quot;ss&quot;&gt;build:
+  steps:
+    &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;install&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;packages:
+      packages: &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;redis&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;redis&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tools&lt;/span&gt;
+
+    &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;script:
+      name: &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;start&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;redis&lt;/span&gt;
+      &lt;span class=&quot;ss&quot;&gt;code: &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;redis&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;--&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;daemonize&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;redis&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cli&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ping&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;basically what I had to do there is to install redis as package in the ruby container I run tests as first step in the build process and next daemonize it (as bad as it may seem) which would probably help me if I was about to use it restart and so on but also automatically starts the instance which is exactly what we need right here. And yeah well so you can feel good, you know the drill, sen ping to redis-cli and if it’s running answers with funny PONG. and that is all. I myself am a mac guy so that is maybe why I had to google even simple solution like this, but we learn as we go.&lt;/p&gt;
+
+&lt;p&gt;So finally full config to run your tests including redis may look like this:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;ss&quot;&gt;ruby: &lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+&lt;span class=&quot;ss&quot;&gt;box: &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ruby&lt;/span&gt;
+&lt;span class=&quot;ss&quot;&gt;services:
+  &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;postgres&lt;/span&gt;
+  &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;redis&lt;/span&gt;
+&lt;span class=&quot;ss&quot;&gt;build:
+  steps:
+    &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;install&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;packages:
+      packages: &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;redis&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;redis&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tools&lt;/span&gt;
+
+    &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;script:
+      name: &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;start&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;redis&lt;/span&gt;
+      &lt;span class=&quot;ss&quot;&gt;code: &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;redis&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;--&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;daemonize&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yes&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;redis&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cli&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ping&lt;/span&gt;
+
+    &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bundle&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;install&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rails&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;database&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;yml&lt;/span&gt;
+
+    &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;script:
+      name: &lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Set&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;up&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;db&lt;/span&gt;
+      &lt;span class=&quot;ss&quot;&gt;code: &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bundle&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;exec&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rake&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;db&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:schema:load&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;RAILS_ENV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;test&lt;/span&gt;
+
+    &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;script:
+      name: &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rspec&lt;/span&gt;
+      &lt;span class=&quot;ss&quot;&gt;code: &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bundle&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;exec&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rspec&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;OK, my real config includes more than 60 lines, so probably I should walk you though it whole, but this one serves ok for purpose of demonstrating what does it take to run rspec tests including redis on wercker.&lt;/p&gt;
+
+&lt;p&gt;Happy coding and see you all next time.&lt;/p&gt;
+</description>
+        <pubDate>Mon, 06 Feb 2017 01:21:00 +0100</pubDate>
+        <link>http://antas.cz/rails-on-wercker-with-redis-running</link>
+        <guid isPermaLink="true">http://antas.cz/rails-on-wercker-with-redis-running</guid>
+        
+        <category>rails</category>
+        
+        <category>redis</category>
+        
+        <category>test</category>
+        
+        <category>ci</category>
+        
+        
+        <category>rails</category>
+        
+        <category>ci</category>
+        
+        <category>test</category>
+        
+        <category>redis</category>
+        
+      </item>
+    
+      <item>
+        <title>First impressions</title>
+        <description>&lt;p&gt;Hey guys, so I am finally moving over from really nice, but at the end quiet painful experience with &lt;a href=&quot;http://www.publify.co&quot;&gt;publify&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;I mean don’t get me wrong, but I found out all my friends using &lt;a href=&quot;http://jekyllrb.com&quot;&gt;jekyll&lt;/a&gt; and I simply had to check it out for myself.&lt;/p&gt;
+
+&lt;p&gt;I am always using pretty widely &lt;a href=&quot;https://www.digitalocean.com&quot;&gt;DigitalOcean&lt;/a&gt; as host for my projects, but this time I also wanted to checkout &lt;a href=&quot;https://pages.github.com&quot;&gt;Github Pages&lt;/a&gt; and what they provide for free.&lt;/p&gt;
+
+&lt;p&gt;So far I have to say for free I never had better experience.&lt;/p&gt;
+
+&lt;p&gt;My setup was to find out from basic tutorial on jekyll pages, what it is and so on and then I just went ahead over to &lt;a href=&quot;http://jekyllthemes.org&quot;&gt;Jekyll Themes&lt;/a&gt; and there I picked this really cute one I quiet like and will probably use for longer time now. Can be found over &lt;a href=&quot;http://jekyllthemes.org/themes/end2end/&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Made me think for a bit thou. How the theme is set up and prepared for you, it is not a setup you want to put into your USERNAME.github.io repository and I will explain why.&lt;/p&gt;
+
+&lt;p&gt;I always really like to store my changes in git and this time if you did all from the readme, you found yourself in a place when every &lt;code class=&quot;highlighter-rouge&quot;&gt;rake publish&lt;/code&gt; is doing &lt;code class=&quot;highlighter-rouge&quot;&gt;git push origin master --force&lt;/code&gt; which is not really something you are going to appreciate.&lt;/p&gt;
+
+&lt;p&gt;So instead I placed repository with sources elsewhere and filled out info so it force pushes real repository USERNAME.github.io instead. Win Win.&lt;/p&gt;
+
+&lt;p&gt;Well not completely at this stage, because I happen to own domain with my surname in it, so what else should be there than this page right?&lt;/p&gt;
+
+&lt;p&gt;There you go, easily follow tutorial Github nice provides &lt;a href=&quot;https://help.github.com/articles/setting-up-an-apex-domain/#configuring-a-records-with-your-dns-provider&quot;&gt;here&lt;/a&gt; but as you see I cannot create alias in my DNS admin, so I point two IPs to root which is not a real problem (well lasted hour to take effect…).&lt;/p&gt;
+
+&lt;p&gt;Then you go and create that &lt;code class=&quot;highlighter-rouge&quot;&gt;CNAME&lt;/code&gt; file they tell you to and you find out that with next &lt;code class=&quot;highlighter-rouge&quot;&gt;rake publish&lt;/code&gt; the &lt;code class=&quot;highlighter-rouge&quot;&gt;CNAME&lt;/code&gt; file is not anymore there… Well of course is not, you force pushed it there right?&lt;/p&gt;
+
+&lt;p&gt;So naturally you go have a look in &lt;code class=&quot;highlighter-rouge&quot;&gt;Rakefile&lt;/code&gt; provided by the theme to see where the problem may be…&lt;/p&gt;
+
+&lt;p&gt;and you see:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;n&quot;&gt;desc&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Generate and publish blog to gh-pages&quot;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;task&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:publish&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:generate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt;
+  &lt;span class=&quot;no&quot;&gt;Dir&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;mktmpdir&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;cp_r&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;_site/.&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;
+
+    &lt;span class=&quot;n&quot;&gt;pwd&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Dir&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;pwd&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;Dir&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;chdir&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;
+
+    &lt;span class=&quot;nb&quot;&gt;system&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;git init&quot;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;system&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;git checkout --orphan &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;GITHUB_REPO_BRANCH&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;system&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;git add .&quot;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;message&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Site updated at &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;now&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;utc&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;system&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;git commit -am &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;inspect&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;system&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;git remote add origin git@github.com:&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;GITHUB_REPONAME&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;.git&quot;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;system&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;git push origin &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;GITHUB_REPO_BRANCH&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; --force&quot;&lt;/span&gt;
+
+    &lt;span class=&quot;no&quot;&gt;Dir&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;chdir&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pwd&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;So yes it will disappear every time you do it because it overrides you previous commit, so your repository will stay one commit all the time.&lt;/p&gt;
+
+&lt;p&gt;But there is nothing easier than fixing it, after you create your &lt;code class=&quot;highlighter-rouge&quot;&gt;tmp&lt;/code&gt; and jump into it, lets create this &lt;code class=&quot;highlighter-rouge&quot;&gt;CNAME&lt;/code&gt; file with domain in it and then commit and force push.&lt;/p&gt;
+
+&lt;p&gt;So it will look like this:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;n&quot;&gt;desc&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Generate and publish blog to gh-pages&quot;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;task&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:publish&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:generate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt;
+  &lt;span class=&quot;no&quot;&gt;Dir&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;mktmpdir&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;cp_r&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;_site/.&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;
+
+    &lt;span class=&quot;n&quot;&gt;pwd&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Dir&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;pwd&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;Dir&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;chdir&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;
+
+    &lt;span class=&quot;no&quot;&gt;File&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;CNAME&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'w'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;YOURDOMAIN&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;nb&quot;&gt;system&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;git init&quot;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;system&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;git checkout --orphan &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;GITHUB_REPO_BRANCH&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;system&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;git add .&quot;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;message&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Site updated at &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;now&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;utc&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;system&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;git commit -am &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;inspect&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;system&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;git remote add origin git@github.com:&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;GITHUB_REPONAME&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;.git&quot;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;system&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;git push origin &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;GITHUB_REPO_BRANCH&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; --force&quot;&lt;/span&gt;
+
+    &lt;span class=&quot;no&quot;&gt;Dir&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;chdir&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pwd&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;And you are all setup and once DNS changes take effect, will automatically point to your custom domain.&lt;/p&gt;
+
+&lt;p&gt;And then you just change info needed to yourself and there you go :)&lt;/p&gt;
+
+&lt;p&gt;Well to be precise there are two more things I noticed afterwards, because I had no DISQUS setup, so I had to go &lt;a href=&quot;https://disqus.com/admin/create/&quot;&gt;here&lt;/a&gt; and create one so I have name to paste in here.&lt;/p&gt;
+
+&lt;p&gt;The completely last thing was once creating new post (like this one here), I noticed, that it’s not displaying it… well what the hell I thought, but it was simple mistake of not including timezone with time given so it would probably appear after build in couple hours or so. But to be sure you are publishing what you want, set timezone, like i did: &lt;code class=&quot;highlighter-rouge&quot;&gt;date: 2016-03-06 21:51:00 CET&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;And now I am loving it and never going back + hopefully will be active, previously did not completely work out, because I fell in love with startup culture so much I simply had no free time.&lt;/p&gt;
+
+&lt;p&gt;Happy coding everybody :)&lt;/p&gt;
+</description>
+        <pubDate>Sun, 06 Mar 2016 21:51:00 +0100</pubDate>
+        <link>http://antas.cz/first-impressions</link>
+        <guid isPermaLink="true">http://antas.cz/first-impressions</guid>
+        
+        <category>jekyll</category>
+        
+        <category>github</category>
+        
+        
+        <category>jekyll</category>
+        
+        <category>github</category>
+        
+      </item>
+    
+  </channel>
+</rss>
